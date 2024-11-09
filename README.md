@@ -14,7 +14,7 @@ A powerful web application that allows users to create beautiful wallpaper colla
 
 ## 🚀 Live Demo
 
-Check out the live demo: [Wallpaper Collage Generator](https://your-demo-link.com)
+Check out the live demo: [Wallpaper Collage Generator](https://wallpaper-collage-generator.vercel.app/)
 
 ## 💻 Technologies Used
 
