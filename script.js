@@ -198,8 +198,21 @@ class WallpaperGenerator {
         // Draw background
         this.drawBackground();
 
-        // Generate grid layout (fixed to match preview style)
-        this.generateGridLayout();
+        // Generate layout based on selected option
+        const layout = this.layoutSelect ? this.layoutSelect.value : 'grid';
+        switch (layout) {
+            case 'grid':
+                this.generateGridLayout();
+                break;
+            case 'masonry':
+                this.generateMasonryLayout();
+                break;
+            case 'random':
+                this.generateRandomLayout();
+                break;
+            default:
+                this.generateGridLayout();
+        }
 
         this.hasGeneratedWallpaper = true;
         if (this.downloadBtn) {
@@ -234,12 +247,90 @@ class WallpaperGenerator {
 
                 console.log(`Drawing image ${index} at ${x},${y}`);
 
-                // Draw white background for cell
-                this.ctx.fillStyle = this.frameColor ? this.frameColor.value : '#ffffff';
-                this.ctx.fillRect(x, y, cellWidth, cellHeight);
-
                 // Draw the image
                 this.drawImageInCell(img, x, y, cellWidth, cellHeight);
+            }
+        });
+    }
+
+    generateMasonryLayout() {
+        const padding = 40;
+        const images = [...this.uploadedImages];
+        const cols = 4;
+        
+        // Calculate initial column widths
+        const colWidth = (this.canvas.width - (padding * (cols + 1))) / cols;
+        let colHeights = new Array(cols).fill(padding);
+        
+        images.forEach((img, index) => {
+            // Find shortest column
+            const shortestCol = colHeights.indexOf(Math.min(...colHeights));
+            
+            // Calculate image height maintaining aspect ratio
+            const imgRatio = img.height / img.width;
+            const height = colWidth * imgRatio;
+            
+            // Draw image
+            const x = padding + (shortestCol * (colWidth + padding));
+            const y = colHeights[shortestCol];
+            
+            this.drawImageInCell(img, x, y, colWidth, height);
+            
+            // Update column height
+            colHeights[shortestCol] += height + padding;
+        });
+    }
+
+    generateRandomLayout() {
+        const padding = 40;
+        const minDistance = 100; // Minimum distance between images
+        const images = [...this.uploadedImages];
+        const placedImages = []; // Keep track of placed images
+        
+        images.forEach((img) => {
+            let attempts = 0;
+            let validPosition = false;
+            let x, y, width, height;
+            
+            // Try to find a valid position up to 50 attempts
+            while (!validPosition && attempts < 50) {
+                // Random size between 300 and 600 pixels
+                width = Math.random() * 300 + 300;
+                height = width * (img.height / img.width);
+                
+                // Random position (avoiding edges)
+                x = padding + Math.random() * (this.canvas.width - width - padding * 2);
+                y = padding + Math.random() * (this.canvas.height - height - padding * 2);
+                
+                // Check distance from all other images
+                validPosition = true;
+                for (const placed of placedImages) {
+                    const distance = Math.sqrt(
+                        Math.pow((x + width/2) - (placed.x + placed.width/2), 2) +
+                        Math.pow((y + height/2) - (placed.y + placed.height/2), 2)
+                    );
+                    
+                    if (distance < Math.max(width, height) + minDistance) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+                
+                attempts++;
+            }
+            
+            if (validPosition) {
+                // Store the placed image information
+                placedImages.push({ x, y, width, height });
+                
+                // Random rotation (reduced from -10/10 to -5/5 degrees for subtlety)
+                this.ctx.save();
+                this.ctx.translate(x + width/2, y + height/2);
+                this.ctx.rotate((Math.random() * 10 - 5) * Math.PI / 180);
+                this.ctx.translate(-(x + width/2), -(y + height/2));
+                
+                this.drawImageInCell(img, x, y, width, height);
+                this.ctx.restore();
             }
         });
     }
