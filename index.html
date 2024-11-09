@@ -7,74 +7,78 @@
     <title>Desktop Wallpaper Generator</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
+    <h1 class="app-title">Wallpaper Collage Generator</h1>
+
     <div class="container">
-        <h1>Desktop Wallpaper Generator</h1>
-        
-        <!-- Upload Section -->
-        <div class="upload-section" id="upload-zone">
-            <input type="file" id="file-input" accept="image/*" multiple hidden />
-            <label for="file-input" class="upload-label">
-                <div class="upload-content">
-                    <i class="upload-icon">📁</i>
-                    <p>Drag & drop images here or click to upload</p>
-                </div>
-            </label>
-        </div>
-
-        <!-- Controls Section -->
-        <div class="controls-section">
-            <div class="layout-controls">
-                <div class="control-group">
-                    <label class="control-label">Layout Style</label>
-                    <select id="layout-select">
-                        <option value="grid">Grid Layout</option>
-                        <option value="mosaic">Mosaic Layout</option>
-                        <option value="stack">Stacked Layout</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">Frame Style</label>
-                    <select id="frame-style">
-                        <option value="classic">Classic Frame</option>
-                        <option value="shadow">Shadow Frame</option>
-                        <option value="minimal">Minimal Frame</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">Frame Color</label>
-                    <input type="color" id="frame-color" value="#000000" title="Frame Color"/>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">Border Width</label>
-                    <input type="number" id="border-width" min="1" max="50" value="8"/>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">Background</label>
-                    <div class="background-controls">
-                        <input type="color" id="background-color" value="#ffffff" title="Background Color"/>
-                        <input type="file" id="background-image" accept="image/*" hidden/>
-                        <label for="background-image" class="upload-bg-btn">Choose Image</label>
-                    </div>
-                </div>
+        <div class="upload-section fade-in">
+            <h2>Upload Images</h2>
+            <div id="upload-zone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag & drop images here or click to select</p>
+                <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
             </div>
-        </div>
-
-        <!-- Preview Section -->
-        <div class="wallpaper-container">
             <div id="wallpaper-preview"></div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button id="generate-btn">Generate Wallpaper</button>
-            <button id="download-btn">Download Wallpaper</button>
+        <div class="controls-section fade-in">
+            <h2>Customize Layout</h2>
+            <div class="control-group">
+                <label for="layout-select">Layout Style</label>
+                <select id="layout-select">
+                    <option value="grid">Grid</option>
+                    <option value="masonry">Masonry</option>
+                    <option value="cascade">Cascade</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="frame-color">Frame Color</label>
+                <input type="color" id="frame-color" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="frame-style">Frame Style</label>
+                <select id="frame-style">
+                    <option value="classic">Classic</option>
+                    <option value="modern">Modern</option>
+                    <option value="minimal">Minimal</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="border-width">Border Width</label>
+                <input type="range" id="border-width" min="0" max="20" value="8">
+            </div>
+
+            <div class="control-group">
+                <label for="background-color">Background Color</label>
+                <input type="color" id="background-color" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="background-image">Background Image</label>
+                <div class="background-image-container">
+                    <input 
+                        type="file" 
+                        id="background-image" 
+                        accept="image/*"
+                        class="background-input">
+                    <button 
+                        id="clear-background" 
+                        class="btn btn-secondary btn-small">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="generate-btn" class="btn btn-primary">Generate Wallpaper</button>
+                <button id="download-btn" class="btn btn-secondary">Download</button>
+            </div>
         </div>
     </div>
 </body>
