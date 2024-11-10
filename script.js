@@ -7,6 +7,12 @@ class WallpaperGenerator {
         this.hasGeneratedWallpaper = false;
         this.backgroundImageData = null;
 
+        // Add to existing properties
+        this.resolutions = {
+            desktop: { width: 3840, height: 2160 },
+            mobile: { width: 1080, height: 1920 }
+        };
+
         // Initialize elements and events after DOM is loaded
         this.initializeElements();
         this.initializeEvents();
@@ -31,6 +37,9 @@ class WallpaperGenerator {
         this.frameColor = document.getElementById('frame-color');
         this.frameStyle = document.getElementById('frame-style');
         this.borderWidth = document.getElementById('border-width');
+
+        // Add to existing elements
+        this.resolutionSelect = document.getElementById('resolution-select');
 
         // Set initial states
         if (this.downloadBtn) {
@@ -189,11 +198,12 @@ class WallpaperGenerator {
             return;
         }
 
-        console.log('Generating wallpaper with', this.uploadedImages.length, 'images'); // Debug log
-
-        // Set canvas size for 4K resolution
-        this.canvas.width = 3840;
-        this.canvas.height = 2160;
+        const resolution = this.resolutionSelect ? 
+            this.resolutionSelect.value : 'desktop';
+        
+        // Set canvas size based on selected resolution
+        this.canvas.width = this.resolutions[resolution].width;
+        this.canvas.height = this.resolutions[resolution].height;
 
         // Draw background
         this.drawBackground();
@@ -202,16 +212,16 @@ class WallpaperGenerator {
         const layout = this.layoutSelect ? this.layoutSelect.value : 'grid';
         switch (layout) {
             case 'grid':
-                this.generateGridLayout();
+                this.generateGridLayout(resolution);
                 break;
             case 'masonry':
-                this.generateMasonryLayout();
+                this.generateMasonryLayout(resolution);
                 break;
             case 'random':
-                this.generateRandomLayout();
+                this.generateRandomLayout(resolution);
                 break;
             default:
-                this.generateGridLayout();
+                this.generateGridLayout(resolution);
         }
 
         this.hasGeneratedWallpaper = true;
@@ -221,88 +231,72 @@ class WallpaperGenerator {
         this.showWallpaperPreview();
     }
 
-    generateGridLayout() {
-        console.log('Generating grid layout');
-        
-        const padding = 40; // Increased padding for better spacing
+    generateGridLayout(resolution = 'desktop') {
+        const padding = resolution === 'mobile' ? 20 : 40;
         const images = [...this.uploadedImages];
         
-        // Fixed grid dimensions: 4x3 grid
-        const rows = 3;
-        const cols = 4;
+        // Adjust grid dimensions based on resolution
+        const rows = resolution === 'mobile' ? 4 : 3;
+        const cols = resolution === 'mobile' ? 3 : 4;
 
         const cellWidth = (this.canvas.width - (padding * (cols + 1))) / cols;
         const cellHeight = (this.canvas.height - (padding * (rows + 1))) / rows;
 
-        console.log(`Grid dimensions: ${cols}x${rows}, Cell size: ${cellWidth}x${cellHeight}`);
-
-        // Draw each image
         images.forEach((img, index) => {
-            if (index < rows * cols) { // Limit to 12 images
+            if (index < rows * cols) {
                 const row = Math.floor(index / cols);
                 const col = index % cols;
                 
                 const x = padding + (col * (cellWidth + padding));
                 const y = padding + (row * (cellHeight + padding));
 
-                console.log(`Drawing image ${index} at ${x},${y}`);
-
-                // Draw the image
                 this.drawImageInCell(img, x, y, cellWidth, cellHeight);
             }
         });
     }
 
-    generateMasonryLayout() {
-        const padding = 40;
+    generateMasonryLayout(resolution = 'desktop') {
+        const padding = resolution === 'mobile' ? 20 : 40;
         const images = [...this.uploadedImages];
-        const cols = 4;
+        const cols = resolution === 'mobile' ? 2 : 4;
         
-        // Calculate initial column widths
         const colWidth = (this.canvas.width - (padding * (cols + 1))) / cols;
         let colHeights = new Array(cols).fill(padding);
         
-        images.forEach((img, index) => {
-            // Find shortest column
+        images.forEach((img) => {
             const shortestCol = colHeights.indexOf(Math.min(...colHeights));
-            
-            // Calculate image height maintaining aspect ratio
             const imgRatio = img.height / img.width;
             const height = colWidth * imgRatio;
             
-            // Draw image
             const x = padding + (shortestCol * (colWidth + padding));
             const y = colHeights[shortestCol];
             
             this.drawImageInCell(img, x, y, colWidth, height);
-            
-            // Update column height
             colHeights[shortestCol] += height + padding;
         });
     }
 
-    generateRandomLayout() {
-        const padding = 40;
-        const minDistance = 100; // Minimum distance between images
+    generateRandomLayout(resolution = 'desktop') {
+        const padding = resolution === 'mobile' ? 20 : 40;
+        const minDistance = resolution === 'mobile' ? 50 : 100;
         const images = [...this.uploadedImages];
-        const placedImages = []; // Keep track of placed images
+        const placedImages = [];
+        
+        const minSize = resolution === 'mobile' ? 150 : 300;
+        const sizeRange = resolution === 'mobile' ? 150 : 300;
         
         images.forEach((img) => {
             let attempts = 0;
             let validPosition = false;
             let x, y, width, height;
             
-            // Try to find a valid position up to 50 attempts
             while (!validPosition && attempts < 50) {
-                // Random size between 300 and 600 pixels
-                width = Math.random() * 300 + 300;
+                width = Math.random() * sizeRange + minSize;
                 height = width * (img.height / img.width);
                 
-                // Random position (avoiding edges)
                 x = padding + Math.random() * (this.canvas.width - width - padding * 2);
                 y = padding + Math.random() * (this.canvas.height - height - padding * 2);
                 
-                // Check distance from all other images
                 validPosition = true;
                 for (const placed of placedImages) {
                     const distance = Math.sqrt(
@@ -320,13 +314,11 @@ class WallpaperGenerator {
             }
             
             if (validPosition) {
-                // Store the placed image information
                 placedImages.push({ x, y, width, height });
                 
-                // Random rotation (reduced from -10/10 to -5/5 degrees for subtlety)
                 this.ctx.save();
                 this.ctx.translate(x + width/2, y + height/2);
-                this.ctx.rotate((Math.random() * 10 - 5) * Math.PI / 180);
+                this.ctx.rotate((Math.random() * 6 - 3) * Math.PI / 180);
                 this.ctx.translate(-(x + width/2), -(y + height/2));
                 
                 this.drawImageInCell(img, x, y, width, height);

@@ -668,3 +668,34 @@ input[type="file"]:focus {
       font-size: 0.9rem;
    }
 }
+
+/* Add to your existing styles */
+#resolution-select {
+   width: 100%;
+   padding: 0.75rem;
+   border: 1px solid var(--border-color);
+   border-radius: 8px;
+   font-size: 0.95rem;
+   color: #4a5568;
+   background-color: #fff;
+   cursor: pointer;
+   transition: all 0.3s ease;
+}
+
+#resolution-select:hover {
+   border-color: #4CAF50;
+}
+
+#resolution-select:focus {
+   outline: none;
+   border-color: #4CAF50;
+   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* Add to your media queries */
+@media (max-width: 768px) {
+   #resolution-select {
+      font-size: 0.9rem;
+      padding: 0.5rem;
+   }
+}
