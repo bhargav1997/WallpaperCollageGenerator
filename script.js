@@ -232,26 +232,149 @@ class WallpaperGenerator {
     }
 
     generateGridLayout(resolution = 'desktop') {
-        const padding = resolution === 'mobile' ? 20 : 40;
+        const isMobile = resolution === 'mobile';
+        const padding = isMobile ? 30 : 60;
+        const topMargin = isMobile ? this.canvas.height * 0.15 : this.canvas.height * 0.12;
         const images = [...this.uploadedImages];
         
-        // Adjust grid dimensions based on resolution
-        const rows = resolution === 'mobile' ? 4 : 3;
-        const cols = resolution === 'mobile' ? 3 : 4;
+        // Calculate optimal grid dimensions based on number of images
+        let rows, cols;
+        const imageCount = images.length;
+        
+        if (isMobile) {
+            if (imageCount <= 2) {
+                rows = 2; cols = 1;
+            } else if (imageCount <= 4) {
+                rows = 2; cols = 2;
+            } else if (imageCount <= 6) {
+                rows = 3; cols = 2;
+            } else if (imageCount <= 8) {
+                rows = 4; cols = 2;
+            } else {
+                rows = Math.ceil(imageCount / 2);
+                cols = 2;
+            }
+        } else {
+            if (imageCount <= 3) {
+                rows = 1; cols = 3;
+            } else if (imageCount <= 6) {
+                rows = 2; cols = 3;
+            } else if (imageCount <= 8) {
+                rows = 2; cols = 4;
+            } else if (imageCount <= 9) {
+                rows = 3; cols = 3;
+            } else if (imageCount <= 12) {
+                rows = 3; cols = 4;
+            } else {
+                // Calculate optimal grid for more images
+                cols = Math.ceil(Math.sqrt(imageCount));
+                rows = Math.ceil(imageCount / cols);
+            }
+        }
 
         const cellWidth = (this.canvas.width - (padding * (cols + 1))) / cols;
-        const cellHeight = (this.canvas.height - (padding * (rows + 1))) / rows;
+        const cellHeight = (this.canvas.height - topMargin - (padding * (rows + 1))) / rows;
 
-        images.forEach((img, index) => {
-            if (index < rows * cols) {
-                const row = Math.floor(index / cols);
-                const col = index % cols;
-                
-                const x = padding + (col * (cellWidth + padding));
-                const y = padding + (row * (cellHeight + padding));
+        // Calculate positions for all images
+        const positions = images.map((img, index) => {
+            const row = Math.floor(index / cols);
+            const col = index % cols;
+            
+            // Smaller random offsets for better alignment
+            const randomX = (Math.random() - 0.5) * padding * 0.3;
+            const randomY = Math.random() * padding * 0.15;
+            
+            return {
+                x: padding + (col * (cellWidth + padding)) + randomX,
+                y: topMargin + (row * (cellHeight + padding)) + randomY,
+                rotation: (Math.random() - 0.5) * 2, // Reduced rotation
+                img: img
+            };
+        });
 
-                this.drawImageInCell(img, x, y, cellWidth, cellHeight);
+        // Sort by Y position for proper layering
+        positions.sort((a, b) => a.y - b.y);
+
+        // Draw each image
+        positions.forEach(pos => {
+            const borderRadius = Math.min(cellWidth, cellHeight) * 0.1;
+            const shadowBlur = padding * 0.4;
+            const borderWidth = this.borderWidth ? parseInt(this.borderWidth.value) : 8;
+            const frameColor = this.frameColor ? 
+                this.adjustFrameOpacity(this.frameColor.value, 0.85) : 
+                'rgba(255, 255, 255, 0.85)';
+
+            this.ctx.save();
+            
+            // Apply subtle rotation
+            this.ctx.translate(pos.x + cellWidth/2, pos.y + cellHeight/2);
+            this.ctx.rotate(pos.rotation * Math.PI / 180);
+            this.ctx.translate(-(pos.x + cellWidth/2), -(pos.y + cellHeight/2));
+
+            // Add shadow
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+            this.ctx.shadowBlur = shadowBlur;
+            this.ctx.shadowOffsetX = 0;
+            this.ctx.shadowOffsetY = shadowBlur * 0.3;
+
+            // Draw frame
+            this.ctx.fillStyle = frameColor;
+            this.roundRect(
+                this.ctx,
+                pos.x - borderWidth,
+                pos.y - borderWidth,
+                cellWidth + borderWidth * 2,
+                cellHeight + borderWidth * 2,
+                borderRadius + borderWidth
+            );
+            this.ctx.fill();
+
+            this.ctx.shadowColor = 'transparent';
+            
+            // Clip for image
+            this.ctx.beginPath();
+            this.roundRect(this.ctx, pos.x, pos.y, cellWidth, cellHeight, borderRadius);
+            this.ctx.clip();
+
+            // Calculate image dimensions with top alignment
+            const imgRatio = pos.img.height / pos.img.width;
+            const cellRatio = cellHeight / cellWidth;
+            let drawWidth, drawHeight, drawX, drawY;
+
+            if (imgRatio > cellRatio) {
+                // Portrait image - maintain top alignment
+                drawWidth = cellWidth;
+                drawHeight = drawWidth * imgRatio;
+                drawX = pos.x;
+                drawY = pos.y;
+            } else {
+                // Landscape image - center horizontally, align to top
+                drawHeight = cellHeight;
+                drawWidth = drawHeight / imgRatio;
+                drawX = pos.x + (cellWidth - drawWidth) / 2;
+                drawY = pos.y;
             }
+
+            // Draw image
+            this.ctx.drawImage(
+                pos.img,
+                drawX,
+                drawY,
+                drawWidth,
+                drawHeight
+            );
+
+            // Add subtle vignette
+            const gradient = this.ctx.createRadialGradient(
+                pos.x + cellWidth/2, pos.y + cellHeight/2, 0,
+                pos.x + cellWidth/2, pos.y + cellHeight/2, cellWidth * 0.8
+            );
+            gradient.addColorStop(0, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.12)');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fill();
+
+            this.ctx.restore();
         });
     }
 
@@ -469,6 +592,14 @@ class WallpaperGenerator {
         link.download = 'wallpaper.png';
         link.href = this.canvas.toDataURL('image/png');
         link.click();
+    }
+
+    // Helper function to adjust frame opacity
+    adjustFrameOpacity(color, opacity) {
+        const r = parseInt(color.substr(1,2), 16);
+        const g = parseInt(color.substr(3,2), 16);
+        const b = parseInt(color.substr(5,2), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     }
 }
 
