@@ -212,17 +212,6 @@ h2::after {
    animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes fadeIn {
-   from {
-      opacity: 0;
-      transform: translateY(10px);
-   }
-   to {
-      opacity: 1;
-      transform: translateY(0);
-   }
-}
-
 .btn:disabled {
    opacity: 0.6;
    cursor: not-allowed;
@@ -683,12 +672,12 @@ input[type="file"]:focus {
 }
 
 #resolution-select:hover {
-   border-color: #4CAF50;
+   border-color: #4caf50;
 }
 
 #resolution-select:focus {
    outline: none;
-   border-color: #4CAF50;
+   border-color: #4caf50;
    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 

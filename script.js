@@ -89,6 +89,57 @@ class WallpaperGenerator {
          });
       }
 
+      // Initialize layout and style controls
+      if (this.layoutSelect) {
+         this.layoutSelect.addEventListener("change", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
+      if (this.frameColor) {
+         this.frameColor.addEventListener("input", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
+      if (this.frameStyle) {
+         this.frameStyle.addEventListener("change", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
+      if (this.borderWidth) {
+         this.borderWidth.addEventListener("input", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
+      if (this.resolutionSelect) {
+         this.resolutionSelect.addEventListener("change", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
+      // Initialize grid style control
+      this.gridStyle = document.getElementById("grid-style");
+      if (this.gridStyle) {
+         this.gridStyle.addEventListener("change", () => {
+            if (this.hasGeneratedWallpaper) {
+               this.generateWallpaper();
+            }
+         });
+      }
+
       // Initialize upload zone
       if (this.uploadZone && this.fileInput) {
          this.uploadZone.addEventListener("click", () => this.fileInput.click());
@@ -309,8 +360,19 @@ class WallpaperGenerator {
       // Draw each image
       positions.forEach((pos) => {
          const borderRadius = Math.min(cellWidth, cellHeight) * 0.1;
-         const shadowBlur = padding * 0.4;
-         const borderWidth = this.borderWidth ? parseInt(this.borderWidth.value) : 8;
+         const frameStyleValue = this.frameStyle ? this.frameStyle.value : "classic";
+         let borderWidth = this.borderWidth ? parseInt(this.borderWidth.value) : 8;
+         let shadowBlur = padding * 0.4;
+
+         // Adjust border and shadow based on frame style
+         if (frameStyleValue === "modern") {
+            borderWidth = Math.max(borderWidth * 0.5, 2); // Thinner border
+            shadowBlur = padding * 0.6; // More pronounced shadow
+         } else if (frameStyleValue === "minimal") {
+            borderWidth = Math.max(borderWidth * 0.25, 1); // Very thin border
+            shadowBlur = padding * 0.2; // Subtle shadow
+         }
+
          const frameColor = this.frameColor ? this.adjustFrameOpacity(this.frameColor.value, 0.85) : "rgba(255, 255, 255, 0.85)";
 
          this.ctx.save();
@@ -345,23 +407,49 @@ class WallpaperGenerator {
          this.roundRect(this.ctx, pos.x, pos.y, cellWidth, cellHeight, borderRadius);
          this.ctx.clip();
 
-         // Calculate image dimensions with top alignment
+         // Get grid style setting
+         const gridStyle = this.gridStyle ? this.gridStyle.value : "fit";
+
+         // Calculate image dimensions based on grid style
          const imgRatio = pos.img.height / pos.img.width;
          const cellRatio = cellHeight / cellWidth;
          let drawWidth, drawHeight, drawX, drawY;
 
-         if (imgRatio > cellRatio) {
-            // Portrait image - maintain top alignment
+         if (gridStyle === "stretch") {
+            // Stretch mode - fill the entire cell
             drawWidth = cellWidth;
-            drawHeight = drawWidth * imgRatio;
+            drawHeight = cellHeight;
             drawX = pos.x;
             drawY = pos.y;
+         } else if (gridStyle === "dynamic") {
+            // Dynamic mode - random sizing with aspect ratio
+            const scale = 0.85 + Math.random() * 0.3; // Random scale between 0.85 and 1.15
+            if (imgRatio > cellRatio) {
+               drawWidth = cellWidth * scale;
+               drawHeight = drawWidth * imgRatio;
+               drawX = pos.x + (cellWidth - drawWidth) / 2;
+               drawY = pos.y;
+            } else {
+               drawHeight = cellHeight * scale;
+               drawWidth = drawHeight / imgRatio;
+               drawX = pos.x + (cellWidth - drawWidth) / 2;
+               drawY = pos.y + (cellHeight - drawHeight) / 2;
+            }
          } else {
-            // Landscape image - center horizontally, align to top
-            drawHeight = cellHeight;
-            drawWidth = drawHeight / imgRatio;
-            drawX = pos.x + (cellWidth - drawWidth) / 2;
-            drawY = pos.y;
+            // Fit mode (default) - maintain aspect ratio with top alignment
+            if (imgRatio > cellRatio) {
+               // Portrait image - maintain top alignment
+               drawWidth = cellWidth;
+               drawHeight = drawWidth * imgRatio;
+               drawX = pos.x;
+               drawY = pos.y;
+            } else {
+               // Landscape image - center horizontally, align to top
+               drawHeight = cellHeight;
+               drawWidth = drawHeight / imgRatio;
+               drawX = pos.x + (cellWidth - drawWidth) / 2;
+               drawY = pos.y;
+            }
          }
 
          // Draw image
@@ -562,11 +650,15 @@ class WallpaperGenerator {
          removeBtn.innerHTML = "×";
          removeBtn.onclick = (e) => {
             e.stopPropagation();
-            this.uploadedImages.splice(index, 1);
-            this.updatePreview();
-            this.hasGeneratedWallpaper = false;
-            if (this.downloadBtn) {
-               this.downloadBtn.disabled = true;
+            // Find the actual index at the time of click
+            const actualIndex = this.uploadedImages.indexOf(img);
+            if (actualIndex > -1) {
+               this.uploadedImages.splice(actualIndex, 1);
+               this.updatePreview();
+               this.hasGeneratedWallpaper = false;
+               if (this.downloadBtn) {
+                  this.downloadBtn.disabled = true;
+               }
             }
          };
 
