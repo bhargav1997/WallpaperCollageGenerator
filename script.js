@@ -6,11 +6,16 @@ class WallpaperGenerator {
       this.ctx = this.canvas.getContext("2d");
       this.hasGeneratedWallpaper = false;
       this.backgroundImageData = null;
+      this.debounceTimer = null;
 
-      // Add to existing properties
+      // Updated resolutions with more options
       this.resolutions = {
-         desktop: { width: 3840, height: 2160 },
+         "4k": { width: 3840, height: 2160 },
+         "2k": { width: 2560, height: 1440 },
+         fullhd: { width: 1920, height: 1080 },
          mobile: { width: 1080, height: 1920 },
+         tablet: { width: 2048, height: 2732 },
+         ultrawide: { width: 3440, height: 1440 },
       };
 
       // Initialize elements and events after DOM is loaded
@@ -26,6 +31,11 @@ class WallpaperGenerator {
       // Get buttons
       this.generateBtn = document.getElementById("generate-btn");
       this.downloadBtn = document.getElementById("download-btn");
+      this.clearAllBtn = document.getElementById("clear-all-btn");
+
+      // Get UI elements
+      this.imageCountEl = document.getElementById("image-count");
+      this.loadingOverlay = document.getElementById("loading-overlay");
 
       // Get background controls
       this.backgroundColor = document.getElementById("background-color");
@@ -52,7 +62,7 @@ class WallpaperGenerator {
       if (this.backgroundColor) {
          this.backgroundColor.addEventListener("input", () => {
             if (this.hasGeneratedWallpaper) {
-               this.generateWallpaper();
+               this.debouncedGenerate();
             }
          });
       }
@@ -69,6 +79,9 @@ class WallpaperGenerator {
                      if (this.hasGeneratedWallpaper) {
                         this.generateWallpaper();
                      }
+                  };
+                  img.onerror = () => {
+                     alert("Failed to load background image. Please try another file.");
                   };
                   img.src = event.target.result;
                };
@@ -89,7 +102,7 @@ class WallpaperGenerator {
          });
       }
 
-      // Initialize layout and style controls
+      // Initialize layout and style controls with debouncing
       if (this.layoutSelect) {
          this.layoutSelect.addEventListener("change", () => {
             if (this.hasGeneratedWallpaper) {
@@ -101,7 +114,7 @@ class WallpaperGenerator {
       if (this.frameColor) {
          this.frameColor.addEventListener("input", () => {
             if (this.hasGeneratedWallpaper) {
-               this.generateWallpaper();
+               this.debouncedGenerate();
             }
          });
       }
@@ -117,7 +130,7 @@ class WallpaperGenerator {
       if (this.borderWidth) {
          this.borderWidth.addEventListener("input", () => {
             if (this.hasGeneratedWallpaper) {
-               this.generateWallpaper();
+               this.debouncedGenerate();
             }
          });
       }
@@ -154,6 +167,9 @@ class WallpaperGenerator {
       if (this.downloadBtn) {
          this.downloadBtn.addEventListener("click", () => this.downloadWallpaper());
       }
+      if (this.clearAllBtn) {
+         this.clearAllBtn.addEventListener("click", () => this.clearAllImages());
+      }
    }
 
    initializeDragAndDrop() {
@@ -182,20 +198,79 @@ class WallpaperGenerator {
       });
    }
 
-   handleFiles(files) {
-      Array.from(files).forEach((file) => {
-         if (file.type.startsWith("image/")) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-               const img = new Image();
-               img.src = e.target.result;
-               img.onload = () => {
-                  this.uploadedImages.push(img);
-                  this.updatePreview();
-               };
-            };
-            reader.readAsDataURL(file);
+   // Debounced generate for performance
+   debouncedGenerate() {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => {
+         this.generateWallpaper();
+      }, 300); // Wait 300ms after user stops adjusting
+   }
+
+   // Clear all uploaded images
+   clearAllImages() {
+      if (this.uploadedImages.length === 0) return;
+
+      if (confirm("Are you sure you want to clear all images?")) {
+         this.uploadedImages = [];
+         this.updatePreview();
+         this.hasGeneratedWallpaper = false;
+         if (this.downloadBtn) {
+            this.downloadBtn.disabled = true;
          }
+         this.updateImageCount();
+      }
+   }
+
+   // Update image count display
+   updateImageCount() {
+      if (this.imageCountEl) {
+         const count = this.uploadedImages.length;
+         this.imageCountEl.textContent = `${count} image${count !== 1 ? "s" : ""} uploaded`;
+      }
+
+      // Show/hide clear all button
+      if (this.clearAllBtn) {
+         this.clearAllBtn.style.display = this.uploadedImages.length > 0 ? "flex" : "none";
+      }
+   }
+
+   // Show loading overlay
+   showLoading() {
+      if (this.loadingOverlay) {
+         this.loadingOverlay.style.display = "flex";
+      }
+   }
+
+   // Hide loading overlay
+   hideLoading() {
+      if (this.loadingOverlay) {
+         this.loadingOverlay.style.display = "none";
+      }
+   }
+
+   handleFiles(files) {
+      const validFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+
+      if (validFiles.length === 0) {
+         alert("Please select valid image files.");
+         return;
+      }
+
+      validFiles.forEach((file) => {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+               this.uploadedImages.push(img);
+               this.updatePreview();
+               this.updateImageCount();
+            };
+            img.onerror = () => {
+               alert(`Failed to load image: ${file.name}`);
+            };
+            img.src = e.target.result;
+         };
+         reader.readAsDataURL(file);
       });
    }
 
@@ -249,36 +324,53 @@ class WallpaperGenerator {
          return;
       }
 
-      const resolution = this.resolutionSelect ? this.resolutionSelect.value : "desktop";
+      // Show loading overlay
+      this.showLoading();
 
-      // Set canvas size based on selected resolution
-      this.canvas.width = this.resolutions[resolution].width;
-      this.canvas.height = this.resolutions[resolution].height;
+      // Use requestAnimationFrame for better performance and no console violations
+      requestAnimationFrame(() => {
+         // Double RAF to ensure loading overlay is visible
+         requestAnimationFrame(() => {
+            try {
+               const resolution = this.resolutionSelect ? this.resolutionSelect.value : "fullhd";
 
-      // Draw background
-      this.drawBackground();
+               // Set canvas size based on selected resolution
+               this.canvas.width = this.resolutions[resolution].width;
+               this.canvas.height = this.resolutions[resolution].height;
 
-      // Generate layout based on selected option
-      const layout = this.layoutSelect ? this.layoutSelect.value : "grid";
-      switch (layout) {
-         case "grid":
-            this.generateGridLayout(resolution);
-            break;
-         case "masonry":
-            this.generateMasonryLayout(resolution);
-            break;
-         case "random":
-            this.generateRandomLayout(resolution);
-            break;
-         default:
-            this.generateGridLayout(resolution);
-      }
+               // Draw background
+               this.drawBackground();
 
-      this.hasGeneratedWallpaper = true;
-      if (this.downloadBtn) {
-         this.downloadBtn.disabled = false;
-      }
-      this.showWallpaperPreview();
+               // Generate layout based on selected option
+               const layout = this.layoutSelect ? this.layoutSelect.value : "grid";
+               switch (layout) {
+                  case "grid":
+                     this.generateGridLayout(resolution);
+                     break;
+                  case "masonry":
+                     this.generateMasonryLayout(resolution);
+                     break;
+                  case "random":
+                     this.generateRandomLayout(resolution);
+                     break;
+                  default:
+                     this.generateGridLayout(resolution);
+               }
+
+               this.hasGeneratedWallpaper = true;
+               if (this.downloadBtn) {
+                  this.downloadBtn.disabled = false;
+               }
+               this.showWallpaperPreview();
+            } catch (error) {
+               console.error("Error generating wallpaper:", error);
+               alert("An error occurred while generating the wallpaper. Please try again.");
+            } finally {
+               // Hide loading overlay
+               this.hideLoading();
+            }
+         });
+      });
    }
 
    generateGridLayout(resolution = "desktop") {
@@ -655,6 +747,7 @@ class WallpaperGenerator {
             if (actualIndex > -1) {
                this.uploadedImages.splice(actualIndex, 1);
                this.updatePreview();
+               this.updateImageCount();
                this.hasGeneratedWallpaper = false;
                if (this.downloadBtn) {
                   this.downloadBtn.disabled = true;

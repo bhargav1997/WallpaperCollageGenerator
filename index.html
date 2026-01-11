@@ -37,6 +37,15 @@
                 <p>Drag & drop images here or click to select</p>
                 <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
             </div>
+            <div class="image-controls">
+                <div class="image-count">
+                    <i class="fas fa-images"></i>
+                    <span id="image-count">0 images uploaded</span>
+                </div>
+                <button id="clear-all-btn" class="btn btn-secondary btn-small" style="display: none;">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
             <div id="wallpaper-preview"></div>
         </div>
 
@@ -88,8 +97,12 @@
             <div class="control-group">
                 <label for="resolution-select">Wallpaper Resolution</label>
                 <select id="resolution-select">
-                    <option value="desktop">Desktop (3840 x 2160)</option>
+                    <option value="4k">4K Desktop (3840 x 2160)</option>
+                    <option value="2k">2K Desktop (2560 x 1440)</option>
+                    <option value="fullhd" selected>Full HD (1920 x 1080)</option>
                     <option value="mobile">Mobile (1080 x 1920)</option>
+                    <option value="tablet">Tablet (2048 x 2732)</option>
+                    <option value="ultrawide">Ultrawide (3440 x 1440)</option>
                 </select>
             </div>
 
@@ -103,9 +116,21 @@
             </div>
 
             <div class="button-group">
-                <button id="generate-btn" class="btn btn-primary">Generate Wallpaper</button>
-                <button id="download-btn" class="btn btn-secondary">Download</button>
+                <button id="generate-btn" class="btn btn-primary">
+                    <i class="fas fa-magic"></i> Generate Wallpaper
+                </button>
+                <button id="download-btn" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Download
+                </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Generating your wallpaper...</p>
         </div>
     </div>
 

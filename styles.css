@@ -409,6 +409,78 @@ input[type="file"]:focus {
    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
+/* Image Controls */
+.image-controls {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-top: 1.5rem;
+   padding: 1rem;
+   background: #f8f9fa;
+   border-radius: 8px;
+}
+
+.image-count {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   color: #4a5568;
+   font-weight: 500;
+}
+
+.image-count i {
+   color: #4caf50;
+   font-size: 1.2rem;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.7);
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   z-index: 9999;
+   backdrop-filter: blur(5px);
+}
+
+.loading-content {
+   text-align: center;
+   color: white;
+}
+
+.loading-content p {
+   margin-top: 1.5rem;
+   font-size: 1.2rem;
+   font-weight: 500;
+}
+
+/* Spinner Animation */
+.spinner {
+   width: 60px;
+   height: 60px;
+   border: 5px solid rgba(255, 255, 255, 0.3);
+   border-top-color: #4caf50;
+   border-radius: 50%;
+   animation: spin 1s linear infinite;
+   margin: 0 auto;
+}
+
+@keyframes spin {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* Button Icons */
+.btn i {
+   margin-right: 0.5rem;
+}
+
 /* Footer Styles */
 .footer {
    background: #ffffff;
@@ -573,6 +645,18 @@ input[type="file"]:focus {
    .controls-section {
       padding: 1.5rem;
       margin-bottom: 1rem;
+   }
+
+   /* Mobile styles for image controls */
+   .image-controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 0.75rem;
+   }
+
+   .image-count {
+      justify-content: center;
    }
 
    /* Adjust preview container for mobile */
